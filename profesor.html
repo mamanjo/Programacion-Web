@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EduData – Panel del Profesor</title>
+
+  <!-- Estilos base del sitio -->
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Estilos específicos del panel del profesor -->
+  <link rel="stylesheet" href="profesor.css" />
+</head>
+<body>
+
+  <!-- Barra superior -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="brand"><a href="index.html" class="brand-link">EduData</a></div>
+      <ul class="menu">
+        <!-- Administración de usuario -->
+        <li><a class="link" href="perfil_profesor.php">Administración de usuario</a></li>
+        <!-- Cerrar sesión -->
+        <li><a class="btn-acceso" href="logout.php" id="btn-logout">Cerrar sesión</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <section class="contenedor">
+      <h1 class="titulo">Panel del Profesor</h1>
+      <p class="sub">Elegí tu curso y registrá la asistencia del día.</p>
+
+      <!-- Selector de curso (desplegable) -->
+      <form class="filtros" id="form-filtros">
+        <label>
+          Curso / División
+          <select id="select-curso" required>
+            <option value="">Seleccionar</option>
+            <!-- Estos valores luego vendrán desde BD según asignación del profe -->
+            <option value="4A">4° A</option>
+            <option value="5B">5° B</option>
+            <option value="6C">6° C</option>
+          </select>
+        </label>
+
+        <label>
+          Fecha
+          <input type="date" id="fecha" required>
+        </label>
+
+        <button type="button" class="btn-primario" id="btn-cargar">Cargar lista</button>
+      </form>
+
+      <!-- Tarjetas de cursos (opcional: atajo visual) -->
+      <div class="cursos-grid" id="cursos-grid">
+        <button class="curso-card" data-curso="4A">
+          <span class="curso-titulo">4° A</span>
+          <span class="curso-sub">Electrotecnia II</span>
+        </button>
+        <button class="curso-card" data-curso="5B">
+          <span class="curso-titulo">5° B</span>
+          <span class="curso-sub">Máquinas Eléctricas I</span>
+        </button>
+        <button class="curso-card" data-curso="6C">
+          <span class="curso-titulo">6° C</span>
+          <span class="curso-sub">Electrónica Industrial</span>
+        </button>
+      </div>
+
+      <!-- Acciones y contadores -->
+      <div class="acciones">
+        <button type="button" id="btn-todos-presentes" class="btn-secundario">Marcar todos “Presente”</button>
+        <button type="button" id="btn-limpiar" class="btn-borde">Limpiar selección</button>
+
+        <div class="contador">
+          P: <span id="countP">0</span> |
+          A: <span id="countA">0</span> |
+          J: <span id="countJ">0</span>
+        </div>
+      </div>
+
+      <!-- Tabla de asistencia -->
+      <div class="tabla-wrap">
+        <form action="#" method="POST" id="form-asistencia">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Alumno</th>
+                <th>DNI</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-alumnos">
+              <!-- Se llena al elegir curso (mock estático para demo) -->
+            </tbody>
+          </table>
+
+          <div class="guardar">
+            <button type="submit" class="btn-primario">Guardar asistencia</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Estadísticas -->
+      <section class="estadisticas">
+        <h3>Estadísticas de asistencia</h3>
+        <div class="stats-linea">
+          <div>Presentes: <strong id="pPorc">0%</strong></div>
+          <div>Ausentes: <strong id="aPorc">0%</strong></div>
+          <div>Justificados: <strong id="jPorc">0%</strong></div>
+          <div>Total alumnos: <strong id="totalAlu">0</strong></div>
+        </div>
+        <div class="barra">
+          <div class="barra-P" id="barraP" style="width:0%"></div>
+          <div class="barra-A" id="barraA" style="width:0%"></div>
+          <div class="barra-J" id="barraJ" style="width:0%"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">© 2025 EduData — Panel del Profesor</footer>
+
+  <script>
+    // Evitar volver al login con back (mejor práctica: también controlar en servidor)
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      // Al salir, opcionalmente podés limpiar storage y empujar al index
+      sessionStorage.clear();
+      localStorage.removeItem('prof-sesion');
+    });
+
+    // Fecha hoy
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    document.getElementById('fecha').value = `${yyyy}-${mm}-${dd}`;
+
+    // Mock de alumnos por curso (luego viene de BD)
+    const dataCurso = {
+      '4A': [
+        { id: 1, nombre: 'Bruno Sileci', dni: '40123456' },
+        { id: 2, nombre: 'María López',  dni: '40999888' },
+        { id: 3, nombre: 'Luis Ferreyra',dni: '38777888' },
+      ],
+      '5B': [
+        { id: 4, nombre: 'Ana Pérez',    dni: '40222111' },
+        { id: 5, nombre: 'Juan Gómez',   dni: '40111000' },
+      ],
+      '6C': [
+        { id: 6, nombre: 'Sofía Romero', dni: '39555444' },
+        { id: 7, nombre: 'Tomás Díaz',   dni: '39666777' },
+        { id: 8, nombre: 'Mica Torres',  dni: '40444333' },
+        { id: 9, nombre: 'Pedro Rivas',  dni: '39222999' },
+      ],
+    };
+
+    const tbody = document.getElementById('tbody-alumnos');
+    const countP = document.getElementById('countP');
+    const countA = document.getElementById('countA');
+    const countJ = document.getElementById('countJ');
+    const pPorc  = document.getElementById('pPorc');
+    const aPorc  = document.getElementById('aPorc');
+    const jPorc  = document.getElementById('jPorc');
+    const totalAlu = document.getElementById('totalAlu');
+    const barraP = document.getElementById('barraP');
+    const barraA = document.getElementById('barraA');
+    const barraJ = document.getElementById('barraJ');
+
+    function renderLista(cursoKey){
+      const lista = dataCurso[cursoKey] || [];
+      tbody.innerHTML = '';
+      let i = 1;
+      lista.forEach(al => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i++}</td>
+          <td>${al.nombre}</td>
+          <td>${al.dni}</td>
+          <td class="estado">
+            <label><input type="radio" name="estado_${al.id}" value="P" checked> Presente</label>
+            <label><input type="radio" name="estado_${al.id}" value="A"> Ausente</label>
+            <label><input type="radio" name="estado_${al.id}" value="J"> Justificado</label>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Listeners de cambio
+      tbody.querySelectorAll('input[type="radio"]').forEach(r => {
+        r.addEventListener('change', actualizarContadores);
+      });
+      actualizarContadores();
+    }
+
+    function actualizarContadores(){
+      const radiosSel = tbody.querySelectorAll('input[type="radio"]:checked');
+      let P=0, A=0, J=0;
+      radiosSel.forEach(r => {
+        if (r.value === 'P') P++;
+        else if (r.value === 'A') A++;
+        else if (r.value === 'J') J++;
+      });
+      const total = tbody.querySelectorAll('tr').length;
+
+      countP.textContent = P;
+      countA.textContent = A;
+      countJ.textContent = J;
+      totalAlu.textContent = total;
+
+      // Porcentajes
+      const p = total ? Math.round(P*100/total) : 0;
+      const a = total ? Math.round(A*100/total) : 0;
+      const j = total ? Math.round(J*100/total) : 0;
+
+      pPorc.textContent = p + '%';
+      aPorc.textContent = a + '%';
+      jPorc.textContent = j + '%';
+
+      // Barras
+      barraP.style.width = p + '%';
+      barraA.style.width = a + '%';
+      barraJ.style.width = j + '%';
+    }
+
+    // Botones rápidos
+    document.getElementById('btn-todos-presentes').addEventListener('click', () => {
+      tbody.querySelectorAll('input[value="P"]').forEach(inp => inp.checked = true);
+      actualizarContadores();
+    });
+    document.getElementById('btn-limpiar').addEventListener('click', () => {
+      tbody.querySelectorAll('input[type="radio"]').forEach(inp => inp.checked = false);
+      actualizarContadores();
+    });
+
+    // Cargar por selector
+    document.getElementById('btn-cargar').addEventListener('click', () => {
+      const curso = document.getElementById('select-curso').value;
+      if (!curso) { alert('Elegí un curso.'); return; }
+      renderLista(curso);
+    });
+
+    // Cargar tocando tarjeta
+    document.querySelectorAll('.curso-card').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const curso = btn.getAttribute('data-curso');
+        document.getElementById('select-curso').value = curso;
+        renderLista(curso);
+        // scroll a la tabla
+        document.querySelector('.tabla').scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+  </script>
+</body>
+</html>

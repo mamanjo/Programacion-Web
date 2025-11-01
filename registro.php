@@ -1,44 +1,54 @@
 <?php
-session_start();
+// registro.php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-// ✅ Recomendado: usar archivo de conexión central
+session_start();
 require 'conexion.php';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+// Solo procesar si viene por POST
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // Validar campos del formulario
+    if (empty($_POST['correo_escuela']) || empty($_POST['password'])) {
+        die("Faltan campos del formulario.");
+    }
+
     $correo = trim($_POST['correo_escuela']);
-    $pass = $_POST['password'];
-    $confirmar = $_POST['confirmar_password'];
+    $pass   = $_POST['password'];
 
-    // 🔸 1. Verificar que las contraseñas coincidan
-    if ($pass !== $confirmar) {
-        echo "<script>alert('Las contraseñas no coinciden'); window.history.back();</script>";
-        exit();
+    // Validar formato de correo
+    if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+        die("Correo no válido.");
     }
 
-    // 🔸 2. Verificar si el correo ya está registrado
-    $check = $conn->prepare("SELECT id FROM usuarios WHERE correo_escuela = ?");
-    $check->bind_param("s", $correo);
-    $check->execute();
-    $check->store_result();
+    // Verificar si ya existe ese correo
+    $stmt = $conn->prepare("SELECT 1 FROM usuarios WHERE correo_escuela = ?");
+    $stmt->bind_param("s", $correo);
+    $stmt->execute();
+    $stmt->store_result();
 
-    if ($check->num_rows > 0) {
-        echo "<script>alert('Este correo ya está registrado'); window.history.back();</script>";
-        $check->close();
-        exit();
+    if ($stmt->num_rows > 0) {
+        echo "<script>alert('⚠️ El usuario ya existe'); window.history.back();</script>";
+        exit;
     }
-    $check->close();
+    $stmt->close();
 
-    // 🔸 3. Hashear la contraseña antes de insertar
-    $hash = password_hash($pass, PASSWORD_DEFAULT);
+    // Encriptar la contraseña
+    $hash = password_hash($pass, PASSWORD_BCRYPT);
 
-    // 🔸 4. Insertar usuario
+    // Insertar nuevo usuario
     $stmt = $conn->prepare("INSERT INTO usuarios (correo_escuela, password, fecha_registro) VALUES (?, ?, NOW())");
     $stmt->bind_param("ss", $correo, $hash);
 
     if ($stmt->execute()) {
-        echo "<script>alert('✅ Registro exitoso. Ahora puedes iniciar sesión'); window.location.href='login.html';</script>";
+        // Guardar sesión automáticamente
+        $_SESSION['id_usuario'] = $stmt->insert_id;
+        $_SESSION['correo_escuela'] = $correo;
+
+        echo "<script>alert('✅ Registro exitoso'); window.location='alumnos.php';</script>";
+        exit;
     } else {
-        echo "❌ Error al registrar: " . $stmt->error;
+        echo "Error al registrar el usuario: " . $stmt->error;
     }
 
     $stmt->close();

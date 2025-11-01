@@ -2,16 +2,16 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>EduData – Iniciar sesión</title>
+  <title>EduData – Crear cuenta</title>
   <link rel="stylesheet" href="login.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <main>
     <section class="login-section">
-      <h2 class="seccion-titulo">Iniciar sesión</h2>
+      <h2 class="seccion-titulo">Crear cuenta</h2>
 
-      <form action="procesar_login.php" method="POST">
+      <form action="registro.php" method="POST">
         <label>
           Correo de la escuela
           <input type="email" name="correo_escuela" placeholder="ejemplo@escuela.com" required>
@@ -22,12 +22,17 @@
           <input type="password" name="password" placeholder="••••••••" required>
         </label>
 
-        <button type="submit">Entrar</button>
+        <label>
+          Confirmar contraseña
+          <input type="password" name="confirmar_password" placeholder="••••••••" required>
+        </label>
+
+        <button type="submit">Crear cuenta</button>
       </form>
 
-      <p>¿No tienes cuenta? <a href="registro.html">Crear cuenta</a></p>
+      <p>¿Ya tienes cuenta? <a href="login.html">Iniciar sesión</a></p>
       <!-- 🔹 botón separado con su clase -->
-      <a href="index.html" class="btn-volver">⬅ Volver al inicio</a>      
+      <a href="index.html" class="btn-volver">⬅ Volver al inicio</a>
     </section>
   </main>
 </body>

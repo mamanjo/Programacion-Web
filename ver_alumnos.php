@@ -1,99 +1,102 @@
 <?php
-// Mostrar errores
+// ver_alumnos.php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-session_start(); //  Necesario para usar $_SESSION
-
-// ⚠️ Verificar que el usuario esté logueado
-if (!isset($_SESSION['usuario_id'])) {
-    header("Location: login.html");
+session_start();
+if (!isset($_SESSION['id_usuario'])) {
+    header('Location: login.html');
     exit;
 }
 
-$usuario_id = $_SESSION['usuario_id'];
+require 'conexion.php';
 
-// Conexión a la base
-$servername = "localhost";
-$username = "root";
-$password = "";
-$database = "edudata_db";
+$id_usuario = (int)$_SESSION['id_usuario'];
 
-$conn = new mysqli($servername, $username, $password, $database);
-if ($conn->connect_error) {
-  die("Error de conexión: " . $conn->connect_error);
-}
+// Traer alumnos del usuario logueado
+$sql = "SELECT 
+            a.id_alumno,
+            a.nombre,
+            a.dni,
+            a.email,
+            a.fecha_nacimiento,
+            e.nombre AS escuela,
+            c.nombre AS curso,
+            a.turno,
+            a.fecha_registro
+        FROM alumnos a
+        INNER JOIN escuelas e ON a.id_escuela = e.id_escuela
+        INNER JOIN cursos c   ON a.id_curso   = c.id_curso
+        WHERE a.id_usuario = ?
+        ORDER BY a.id_alumno DESC";
 
-// ✅ Traer solo los alumnos del usuario logueado
-$stmt = $conn->prepare("SELECT * FROM alumnos WHERE usuario_id = ? ORDER BY fecha_registro DESC");
-$stmt->bind_param("i", $usuario_id);
+$stmt = $conn->prepare($sql);
+$stmt->bind_param('i', $id_usuario);
 $stmt->execute();
 $result = $stmt->get_result();
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lista de Alumnos Registrados</title>
-  <link rel="stylesheet" href="ver_alumnos.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listado de Alumnos</title>
+  <link rel="stylesheet" href="ver_alumnos.css">
 </head>
 <body>
-  <h1 class="titulo-lista">👨‍🏫 Lista de Alumnos Registrados</h1>
 
-  <?php if ($result->num_rows > 0): ?>
-    <div class="tabla-wrap">
-      <table class="tabla-alumnos">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre completo</th>
-            <th>DNI</th>
-            <th>Correo electrónico</th>
-            <th>Fecha de nacimiento</th>
-            <th>Curso</th>
-            <th>Teléfono de emergencia</th>
-            <th>Nacionalidad</th>
-            <th>Dirección</th>
-            <th>Materia más difícil</th>
-            <th>Obra social</th>
-            <th>Turno</th>
-            <th>Observaciones</th>
-            <th>Fecha de registro</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php while($row = $result->fetch_assoc()): ?>
+  <header>
+    <h1>📋 Alumnos Registrados</h1>
+    <a href="alumnos.php" class="btn-volver">➕ Nuevo alumno</a>
+    <a href="logout.php" class="btn-logout" onclick="return confirm('¿Cerrar sesión?')">🚪 Salir</a>
+  </header>
+
+  <?php if (isset($_GET['ok'])): ?>
+    <p class="mensaje-exito">✅ Alumno registrado correctamente.</p>
+  <?php endif; ?>
+
+  <section class="tabla-alumnos">
+    <table border="1" cellspacing="0" cellpadding="8">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>DNI</th>
+          <th>Email</th>
+          <th>Fecha Nac.</th>
+          <th>Escuela</th>
+          <th>Curso</th>
+          <th>Turno</th>
+          <th>Fecha Registro</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if ($result->num_rows > 0): ?>
+          <?php while ($row = $result->fetch_assoc()): ?>
             <tr>
-              <td><?= htmlspecialchars($row['id']) ?></td>
+              <td><?= htmlspecialchars($row['id_alumno']) ?></td>
               <td><?= htmlspecialchars($row['nombre']) ?></td>
               <td><?= htmlspecialchars($row['dni']) ?></td>
               <td><?= htmlspecialchars($row['email']) ?></td>
               <td><?= htmlspecialchars($row['fecha_nacimiento']) ?></td>
+              <td><?= htmlspecialchars($row['escuela']) ?></td>
               <td><?= htmlspecialchars($row['curso']) ?></td>
-              <td><?= htmlspecialchars($row['telefono_emergencia']) ?></td>
-              <td><?= htmlspecialchars($row['nacionalidad']) ?></td>
-              <td><?= htmlspecialchars($row['direccion']) ?></td>
-              <td><?= htmlspecialchars($row['materia_dificultosa']) ?></td>
-              <td><?= htmlspecialchars($row['obra_social']) ?></td>
               <td><?= htmlspecialchars($row['turno']) ?></td>
-              <td><?= htmlspecialchars($row['observaciones']) ?></td>
               <td><?= htmlspecialchars($row['fecha_registro']) ?></td>
               <td>
-                <a href="editar_alumno.php?id=<?= urlencode($row['id']) ?>" class="accion-editar">Editar</a>
-                <a href="borrar_alumno.php?id=<?= urlencode($row['id']) ?>" class="accion-borrar" onclick="return confirm('¿Seguro que quieres eliminar este alumno?');">Eliminar</a>
+                <a href="editar_alumno.php?id=<?= $row['id_alumno'] ?>" class="btn-editar">✏️ Editar</a>
+                <a href="borrar_alumno.php?id=<?= $row['id_alumno'] ?>" class="btn-borrar" onclick="return confirm('¿Eliminar este alumno?')">🗑️ Borrar</a>
               </td>
             </tr>
           <?php endwhile; ?>
-        </tbody>
-      </table>
-    </div>
-  <?php else: ?>
-    <p class="sin-alumnos">📭 No hay alumnos registrados todavía.</p>
-  <?php endif; ?>
+        <?php else: ?>
+          <tr><td colspan="10" style="text-align:center;">No hay alumnos registrados todavía.</td></tr>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </section>
 
-  <a href="alumnos.html" class="volver-link">← Volver al formulario</a>
 </body>
 </html>
 <?php
