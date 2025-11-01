@@ -3,7 +3,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-session_start(); // ✅ Necesario para usar $_SESSION
+session_start(); //  Necesario para usar $_SESSION
 
 // ⚠️ Verificar que el usuario esté logueado
 if (!isset($_SESSION['usuario_id'])) {

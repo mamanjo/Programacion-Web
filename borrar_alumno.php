@@ -30,7 +30,7 @@ if ($id <= 0) {
     exit;
 }
 
-// ✅ Borrar solo si pertenece al usuario
+//  Borrar solo si pertenece al usuario
 $stmt = $conn->prepare("DELETE FROM alumnos WHERE id = ? AND usuario_id = ?");
 $stmt->bind_param('ii', $id, $usuario_id);
 $stmt->execute();
