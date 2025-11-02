@@ -1,40 +1,67 @@
 <?php
-// borrar_alumno.php - elimina un alumno por id
+// borrar_alumno.php - elimina un alumno por id (versión actualizada)
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 session_start();
 
-// ⚠️ Verificar que el usuario esté logueado
-if (!isset($_SESSION['usuario_id'])) {
+// ✅ Chequeo de sesión (usamos el nombre real que maneja tu login)
+if (!isset($_SESSION['id_usuario'])) {
     header('Location: login.html');
     exit;
 }
+$id_usuario = (int)$_SESSION['id_usuario'];
 
-$usuario_id = $_SESSION['usuario_id'];
+// ✅ Conexión centralizada
+require 'conexion.php';
 
-// Conexión
-$servername = "localhost";
-$username = "root";
-$password = "";
-$database = "edudata_db";
-
-$conn = new mysqli($servername, $username, $password, $database);
-if ($conn->connect_error) {
-    die("Error de conexión: " . $conn->connect_error);
+// ✅ Recibir id_alumno (acepta ?id_alumno=... o ?id=...)
+$id_alumno = 0;
+if (isset($_GET['id_alumno'])) {
+    $id_alumno = (int)$_GET['id_alumno'];
+} elseif (isset($_GET['id'])) {
+    $id_alumno = (int)$_GET['id'];
 }
 
-$id = isset($_GET['id']) ? intval($_GET['id']) : 0;
-if ($id <= 0) {
-    header('Location: ver_alumnos.php');
+if ($id_alumno <= 0) {
+    header('Location: ver_alumnos.php?msg=alumno_invalido');
     exit;
 }
 
-//  Borrar solo si pertenece al usuario
-$stmt = $conn->prepare("DELETE FROM alumnos WHERE id = ? AND usuario_id = ?");
-$stmt->bind_param('ii', $id, $usuario_id);
-$stmt->execute();
+// ✅ Verificar que el alumno pertenece a este usuario (seguridad)
+$chk = $conn->prepare("SELECT 1 FROM alumnos WHERE id_alumno = ? AND id_usuario = ? LIMIT 1");
+if (!$chk) {
+    die("Error preparando verificación: " . $conn->error);
+}
+$chk->bind_param('ii', $id_alumno, $id_usuario);
+$chk->execute();
+$chk->store_result();
 
-header('Location: ver_alumnos.php');
+if ($chk->num_rows === 0) {
+    $chk->close();
+    // No existe o no le pertenece
+    header('Location: ver_alumnos.php?msg=no_autorizado');
+    exit;
+}
+$chk->close();
+
+// ⚠️ Si tu FK asistencias(id_alumno) NO tiene ON DELETE CASCADE,
+// eliminamos primero las asistencias del alumno.
+$delAsis = $conn->prepare("DELETE FROM asistencias WHERE id_alumno = ?");
+if ($delAsis) {
+    $delAsis->bind_param('i', $id_alumno);
+    $delAsis->execute();
+    $delAsis->close();
+}
+
+// ✅ Borrar el alumno
+$del = $conn->prepare("DELETE FROM alumnos WHERE id_alumno = ? AND id_usuario = ?");
+if (!$del) {
+    die("Error preparando borrado: " . $conn->error);
+}
+$del->bind_param('ii', $id_alumno, $id_usuario);
+$del->execute();
+$del->close();
+
+header('Location: ver_alumnos.php?msg=alumno_borrado');
 exit;
-?>
