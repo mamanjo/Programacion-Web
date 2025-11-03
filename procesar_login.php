@@ -37,7 +37,7 @@ $stmt->bind_param("s", $correo);
 $stmt->execute();
 $stmt->store_result();
 
-if ($stmt->num_rows === 1) {
+if ($stmt->num_rows === 1) {//averiguar bien estas lineas
     $stmt->bind_result($id_usuario, $hash_guardado);
     $stmt->fetch();
 

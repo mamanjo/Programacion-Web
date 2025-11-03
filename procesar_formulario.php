@@ -47,7 +47,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 }
 
 // ---- Coherencia: el curso debe pertenecer a la escuela seleccionada ----
-$sqlChk = "SELECT 1 FROM cursos WHERE id_curso = ? AND id_escuela = ? LIMIT 1";
+sqlChk$ = "SELECT 1 FROM cursos WHERE id_curso = ? AND id_escuela = ? LIMIT 1";
 $chk = $conn->prepare($sqlChk);
 if (!$chk) { die('Error preparando verificación curso/escuela: ' . $conn->error); }
 $chk->bind_param('ii', $id_curso, $id_escuela);

@@ -5,7 +5,7 @@ ini_set('display_errors', 1);
 session_start();
 require 'conexion.php';
 
-function fail($msg) {
+function fail($msg) {// averiguar estas lineas
   echo "<div style='font-family:Arial;padding:16px;background:#fee;color:#900;border:1px solid #f88;border-radius:8px;max-width:720px;margin:40px auto'>
           <h3>❌ $msg</h3>
           <p><a href='login_profesor.html'>Volver al login</a></p>
@@ -31,7 +31,7 @@ if (!$stmt) fail('Error preparando consulta: ' . $conn->error);
 
 $stmt->bind_param('s', $correo);
 $stmt->execute();
-$stmt->store_result();
+$stmt->store_result();//averiguar store_result
 
 if ($stmt->num_rows !== 1) {
   $stmt->close();
@@ -39,17 +39,12 @@ if ($stmt->num_rows !== 1) {
 }
 
 $stmt->bind_result($id_profesor, $id_escuela, $hash_guardado, $nombre);
-$stmt->fetch();
+$stmt->fetch();//buscar fetch
 $stmt->close();
 
 // INFO de depuración (mostrar qué hay en DB)
 $es_bcrypt = is_string($hash_guardado) && preg_match('/^\$2[aby]\$\d{2}\$/', $hash_guardado);
 $tipo = $es_bcrypt ? 'BCRYPT' : 'texto plano';
-/* Descomenta estas dos líneas si querés ver el valor exacto (luego volvé a comentarlas)
-echo "<pre>DEBUG: password en DB ($tipo): " . htmlspecialchars(substr($hash_guardado,0,30)) . "...</pre>";
-echo "<pre>DEBUG: probando con password ingresada: " . htmlspecialchars($pass) . "</pre>";
-*/
-
 $ok = $es_bcrypt ? password_verify($pass, $hash_guardado)
                  : hash_equals((string)$hash_guardado, (string)$pass);
 
