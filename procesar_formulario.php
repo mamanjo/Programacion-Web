@@ -40,22 +40,33 @@ if ($id_escuela <= 0)          $faltan[] = 'id_escuela';
 if ($id_curso <= 0)            $faltan[] = 'id_curso';
 
 if (!empty($faltan)) {
-    die('Faltan campos del formulario: ' . implode(', ', $faltan));
+    echo "<script>alert('Faltan campos del formulario: ".implode(', ', $faltan)."'); window.history.back();</script>";
+    exit;
 }
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    die('Correo inválido.');
+    echo "<script>alert('Correo inválido.'); window.history.back();</script>";
+    exit;
+}
+// Validar formato YYYY-MM-DD (simple)
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_nacimiento)) {
+    echo "<script>alert('Formato de fecha inválido (use AAAA-MM-DD).'); window.history.back();</script>";
+    exit;
 }
 
 // ---- Coherencia: el curso debe pertenecer a la escuela seleccionada ----
-sqlChk$ = "SELECT 1 FROM cursos WHERE id_curso = ? AND id_escuela = ? LIMIT 1";
+$sqlChk = "SELECT 1 FROM cursos WHERE id_curso = ? AND id_escuela = ? LIMIT 1";
 $chk = $conn->prepare($sqlChk);
-if (!$chk) { die('Error preparando verificación curso/escuela: ' . $conn->error); }
+if (!$chk) { 
+    echo "<script>alert('Error preparando verificación curso/escuela: ".$conn->error."'); window.history.back();</script>";
+    exit;
+}
 $chk->bind_param('ii', $id_curso, $id_escuela);
 $chk->execute();
 $chk->store_result();
 if ($chk->num_rows === 0) {
     $chk->close();
-    die('El curso no pertenece a la escuela seleccionada.');
+    echo "<script>alert('El curso no pertenece a la escuela seleccionada.'); window.history.back();</script>";
+    exit;
 }
 $chk->close();
 
@@ -74,14 +85,17 @@ VALUES
      ?, NOW())";
 
 $stmt = $conn->prepare($sql);
-if (!$stmt) { die('Error preparando inserción: ' . $conn->error); }
+if (!$stmt) { 
+    echo "<script>alert('Error preparando inserción: ".$conn->error."'); window.history.back();</script>";
+    exit;
+}
 
 $stmt->bind_param(
     "ssssiisssssssi",
     $nombre,               // s
     $dni,                  // s
     $email,                // s
-    $fecha_nacimiento,     // s
+    $fecha_nacimiento,     // s (DATE aceptará 'YYYY-MM-DD')
     $id_curso,             // i
     $id_escuela,           // i
     $telefono_emergencia,  // s
@@ -94,12 +108,26 @@ $stmt->bind_param(
     $id_usuario            // i
 );
 
-if ($stmt->execute()) {
-    header('Location: ver_alumnos.php?ok=1');
+try {
+    $ok = $stmt->execute();
+} catch (mysqli_sql_exception $e) {
+    // Mensaje más amigable si hay clave única (por ejemplo, DNI duplicado)
+    $msg = $e->getMessage();
+    if (strpos($msg, 'Duplicate') !== false || strpos($msg, 'UNIQUE') !== false) {
+        echo "<script>alert('No se pudo registrar: DNI o email ya existen.'); window.history.back();</script>";
+        exit;
+    }
+    echo "<script>alert('Error al registrar: ".htmlspecialchars($msg)."'); window.history.back();</script>";
     exit;
-} else {
-    echo 'Error al registrar: ' . $stmt->error;
 }
 
 $stmt->close();
 $conn->close();
+
+if ($ok) {
+    header('Location: ver_alumnos.php?ok=1');
+    exit;
+} else {
+    echo "<script>alert('No se pudo registrar el alumno.'); window.history.back();</script>";
+    exit;
+}
